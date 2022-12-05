@@ -3,9 +3,10 @@ from slugify import slugify
 from Utils.colors import colors
 import os
 
+# Referencias e Documentações
 # https://pandoc.org/try/
 # https://www.uv.es/wikibase/doc/cas/pandoc_manual_2.7.3.wiki
-
+# https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 ## Parametrização
 input_file              = "DOCX/75_29-11.docx"
@@ -15,12 +16,8 @@ modalidades_path        = f"{output_path}/Modalidades"
 modalidade_prefix       = "Modalidade_id_"
 ## End Parametrização
 
-## -------------------------------
-## Etapa de Conversão
-
-
 def converter():
-    print(":::::::::::::::::::::::::")
+    print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando conversão via pandoc...")
     print(f"Arquivo de entrada: {colors.underline(input_file)}")
     print(colors.yellow("Executando o comando..."))
@@ -31,6 +28,7 @@ def converter():
 #
 
 def spliter():
+    print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando a etapa de Split...")
     with open(output_full_html_file, "r", encoding='utf-8') as html_file:
         html_doc = html_file.read()
@@ -70,6 +68,7 @@ def spliter():
 #
 
 def corretor():
+    print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando o modulo de correção")
     modalidades_files = os.listdir(modalidades_path)
     print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
@@ -84,15 +83,34 @@ def corretor():
         if title.find_parent().name == "h1":
             print("Titulo bugado")
         #
-        
-
     #
+#
+
+def sqler():
+    print(colors.bold(":::::::::::::::::::::::::"))
+    print("Iniciando o modulo de SQL")
+    modalidades_files = os.listdir(modalidades_path)
+    print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
+    
+    for index,modalidade_file_name in enumerate(modalidades_files):
+        with open(f"{modalidades_path}/{modalidade_file_name}", "r") as modalidade:
+            modalidade_html = modalidade.read()
+            modalidade.close()
+        #
+        print(colors.blue(f"{index} - {modalidade_file_name}"))
+        parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml')
+        title = parsed_modalidade.strong
+        if title.find_parent().name == "h1":
+            print("Titulo bugado")
+        #
 #
 
 ## -------------------------------
 
 #converter()
 #spliter()
-corretor()
+#corretor()
+sqler()
 
 ### Modulo de inspeção?
+### Modulo SQL
