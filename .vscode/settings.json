@@ -1,0 +1,14 @@
+{
+    "[html]": {
+        "editor.defaultFormatter": "HookyQR.beautify",
+        "files.encoding": "windows1252"
+    },
+    "[plaintext]": {
+        "files.encoding": "windows1252"
+    },
+    "material-icon-theme.folders.associations": {
+        ".myenv": "Environment",
+        "DOCX": "Docs",
+        "References": "Template",
+    },
+}
