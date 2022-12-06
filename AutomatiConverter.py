@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from slugify import slugify
 from Utils.colors import colors
 from Utils.numeros_romanos import romanToDecimal
+from Utils.lambdas import is_modalidade_title
 import os
 import re
 
@@ -40,15 +41,7 @@ def spliter():
     parsed_html = BeautifulSoup(html_doc, 'html.parser')
     print(colors.green(f"Parserizado o arquivo {output_full_html_file}"))
 
-    def find_modalidades(tag): 
-        is_strong = (tag.name == "strong")
-        is_mod_captalize_case = ('Modalidade' in tag.text)
-        is_mod_upper_case = ('MODALIDADE' in tag.text)
-
-        return is_strong and (is_mod_captalize_case or is_mod_upper_case)
-    #
-
-    modalidades = parsed_html.find_all(lambda tag: find_modalidades(tag))
+    modalidades = parsed_html.find_all(lambda tag: is_modalidade_title(tag))
 
     for m in modalidades[1:]:
         m.parent.insert_before("###DIVIDER###")
@@ -80,19 +73,47 @@ def corretor():
         modalidade.close()
         
         print(colors.blue(f"{index} - {modalidade_file_name}"))
-        parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml') # TODO ver com o 'html.parser'
+        #html = BeautifulSoup(modalidade_html, 'lxml')
+        html = BeautifulSoup(modalidade_html, 'html.parser')
         # TODO ver pq ta colocando HTML
-        title = parsed_modalidade.strong
-        if title.find_parent().name == "h1":
-            print("Titulo bugado")
-            title.find_parent().name = "h3"
-        else: 
-            print("Change")
-            parsed_modalidade.strong.name = "h3"
+
+        title = html.find(lambda tag: is_modalidade_title(tag))
+        
+        if title.name != "h3": 
+            title.string = title.string.replace('\n',' ')
+            #print(f"O titulo '{title.string}' foi alterado de {title.name} para h3")
+            title.name = "h3"
+        #
+
+        topics = html.find_all('h1', {'id': re.compile(r'.+')})
+        print(f"Foram encontrados {len(topics)} topicos")
+        for topic in topics:
+            if topic.findChildren():
+                #print("Tem coisa dentro")
+                text = topic.text.replace('\n',' ')
+                for child in topic.findChildren(): 
+                    child.extract()
+                topic.string = text
+            if topic.name != "strong":  
+                print(f"O topico '{topic.string}' foi alterado de {topic.name} para strong")
+                topic.name = "strong"
+            #
+        #
+
+        letter_list_itens =  html.find_all(name="blockquote")
+        print(f"Foram encontrados {len(letter_list_itens)} blockquote")
+        for blockquote in letter_list_itens:
+            if blockquote.findChild():
+                sub_tag = blockquote.findChild()
+                super_tag = blockquote.find_parent()
+                blockquote.extract()
+                super_tag.insert(0, sub_tag)
+            #
         #
         
         modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
-        modalidade.write(str(parsed_modalidade))
+        #modalidade = open(f"{modalidades_path}/alt_{modalidade_file_name}", "w")
+        modalidade.write(str(html))
         modalidade.close()
     #
 #
@@ -128,7 +149,7 @@ def sqler():
 ## -------------------------------
 
 #converter()
-#spliter()
+spliter()
 corretor()
 #sqler()
 
