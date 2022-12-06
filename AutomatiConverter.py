@@ -1,7 +1,9 @@
 from bs4 import BeautifulSoup
 from slugify import slugify
 from Utils.colors import colors
+from Utils.numeros_romanos import romanToDecimal
 import os
+import re
 
 # Referencias e Documentações
 # https://pandoc.org/try/
@@ -73,16 +75,24 @@ def corretor():
     modalidades_files = os.listdir(modalidades_path)
     print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
     for index,modalidade_file_name in enumerate(modalidades_files):
-        with open(f"{modalidades_path}/{modalidade_file_name}", "r") as modalidade:
-            modalidade_html = modalidade.read()
-            modalidade.close()
-        #
+        modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "r+")
+        modalidade_html = modalidade.read()
+        modalidade.close()
+        
         print(colors.blue(f"{index} - {modalidade_file_name}"))
         parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml')
         title = parsed_modalidade.strong
         if title.find_parent().name == "h1":
             print("Titulo bugado")
+            title.find_parent().name = "h3"
+        else: 
+            print("Change")
+            parsed_modalidade.strong.name = "h3"
         #
+        
+        modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
+        modalidade.write(str(parsed_modalidade))
+        modalidade.close()
     #
 #
 
@@ -97,20 +107,29 @@ def sqler():
             modalidade_html = modalidade.read()
             modalidade.close()
         #
-        print(colors.blue(f"{index} - {modalidade_file_name}"))
-        parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml')
-        title = parsed_modalidade.strong
-        if title.find_parent().name == "h1":
-            print("Titulo bugado")
+        roman_number_regex = "-M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})-"
+        search_result = re.search(roman_number_regex, modalidade_file_name.upper())
+        if search_result is not None:
+            roman_number = search_result.group().replace("-","")
+            modalite_number = romanToDecimal(roman_number)
+            print(modalite_number)
+        else:
+            print(colors.red(f"Numero romano não encontrado no arquivo: {modalidade_file_name}"))
         #
+
+        #print(colors.blue(f"{index} - {modalidade_file_name}"))
+        #parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml')
+        #title = parsed_modalidade.strong.text
+        #print(title)
+    #
 #
 
 ## -------------------------------
 
 #converter()
 #spliter()
-#corretor()
-sqler()
+corretor()
+#sqler()
 
 ### Modulo de inspeção?
 ### Modulo SQL
