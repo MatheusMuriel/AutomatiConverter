@@ -3,6 +3,7 @@ from slugify import slugify
 from Utils.colors import colors
 from Utils.numeros_romanos import romanToDecimal
 from Utils.lambdas import is_modalidade_title
+from Utils.lambdas import is_letter_list
 import os
 import re
 
@@ -12,11 +13,12 @@ import re
 # https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 ## Parametrização
-input_file              = "DOCX/75_29-11.docx"
-output_path             = "HTML"
-output_full_html_file   = f"{output_path}/output_full.html"
-modalidades_path        = f"{output_path}/Modalidades"
-modalidade_prefix       = "Modalidade_id_"
+input_file               = "DOCX/75_29-11.docx"
+output_path              = "HTML"
+output_full_html_file    = f"{output_path}/output_full.html"
+output_parcial_html_file = f"{output_path}/output_parcial.html"
+modalidades_path         = f"{output_path}/Modalidades"
+modalidade_prefix        = "Modalidade_id_"
 ## End Parametrização
 
 def converter():
@@ -33,7 +35,10 @@ def converter():
 def spliter():
     print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando a etapa de Split...")
-    with open(output_full_html_file, "r", encoding='utf-8') as html_file:
+    
+    # TODO temporariamente como parcial
+    with open(output_parcial_html_file, "r", encoding='utf-8') as html_file:
+    #with open(output_full_html_file, "r", encoding='utf-8') as html_file:
         html_doc = html_file.read()
         html_file.close()
     #
@@ -48,13 +53,15 @@ def spliter():
     #
 
     str_html = str(parsed_html)
+    str_html = str_html.replace('\n',' ')
     pages = str_html.split("###DIVIDER###")
     print(f"Dividido em {colors.bold(len(pages))} partes")
 
     print(colors.yellow("Salvando arquivos..."))
     for index,page in enumerate(pages):
         parsed_page = BeautifulSoup(page, 'html.parser')
-        file_name = f"{index}_{slugify(parsed_page.strong.text)}.html"
+        file_name = f"{slugify(parsed_page.strong.text)}.html"
+        #file_name = f"{index}_{slugify(parsed_page.strong.text)}.html"
         with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
             html_file.write(page)
         #
@@ -64,7 +71,7 @@ def spliter():
 
 def corretor():
     print(colors.bold(":::::::::::::::::::::::::"))
-    print("Iniciando o modulo de correção")
+    print("Iniciando o etapa de Correção...")
     modalidades_files = os.listdir(modalidades_path)
     print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
     for index,modalidade_file_name in enumerate(modalidades_files):
@@ -72,50 +79,90 @@ def corretor():
         modalidade_html = modalidade.read()
         modalidade.close()
         
-        print(colors.blue(f"{index} - {modalidade_file_name}"))
-        #html = BeautifulSoup(modalidade_html, 'lxml')
+        print(colors.blue(f"{index+1} - {modalidade_file_name}"))
         html = BeautifulSoup(modalidade_html, 'html.parser')
-        # TODO ver pq ta colocando HTML
-
-        title = html.find(lambda tag: is_modalidade_title(tag))
         
-        if title.name != "h3": 
-            title.string = title.string.replace('\n',' ')
-            #print(f"O titulo '{title.string}' foi alterado de {title.name} para h3")
-            title.name = "h3"
-        #
 
+        """ Corretor do estilo do cabeçalho da modalidade """
+        title = html.find(lambda tag: is_modalidade_title(tag))
+        if title.name != "h3": 
+            old_name = title.name
+            title.name = "h3"
+            #print(f"O titulo '{title.string}' foi alterado de {old_name} para h3")
+        #
+        """ ... """
+
+        """ Corretor do estilo dos titulos dos topicos """
         topics = html.find_all('h1', {'id': re.compile(r'.+')})
-        print(f"Foram encontrados {len(topics)} topicos")
+        #print(f"Foram encontrados {colors.bold(len(topics))} topicos")
         for topic in topics:
             if topic.findChildren():
-                #print("Tem coisa dentro")
+                # Tratativa para evitar o strong dentro de strong
                 text = topic.text.replace('\n',' ')
                 for child in topic.findChildren(): 
                     child.extract()
                 topic.string = text
             if topic.name != "strong":  
-                print(f"O topico '{topic.string}' foi alterado de {topic.name} para strong")
+                #print(f"O topico '{topic.string}' foi alterado de {topic.name} para strong")
                 topic.name = "strong"
             #
         #
+        print(f"Foram arrumados {colors.bold(len(topics))} topicos.")
 
+        """ Corretor do espaçamento inicial nas listas alfabeticas """
         letter_list_itens =  html.find_all(name="blockquote")
-        print(f"Foram encontrados {len(letter_list_itens)} blockquote")
+        #print(f"Foram encontrados {colors.bold(len(letter_list_itens))} blockquote")
+        contador_blockquote = 0
         for blockquote in letter_list_itens:
             if blockquote.findChild():
                 sub_tag = blockquote.findChild()
                 super_tag = blockquote.find_parent()
-                blockquote.extract()
-                super_tag.insert(0, sub_tag)
+                if super_tag.name == "li":
+                    blockquote.extract()
+                    super_tag.insert(0, sub_tag)
+                else:
+                    blockquote.name = "p"
+                contador_blockquote += 1
             #
         #
+        print(f"Foram removidos {colors.bold(contador_blockquote)} blockquotes.")
+
+        """ Corretor da identação das listas alfabeticas  """
+        #letter_lists = html.find_all(lambda tag: is_letter_list(tag))
+        #for letter_list in letter_lists:
+            #last_list = letter_list.find_previous(name="li")
+            #if last_list:
+                #last_list.insert_after(letter_list)
+            #
+            #print("")
+        #
+
+        """ Corretor de quebra de linhas em listas alfabeticas """
+        letter_lists = html.find_all(lambda tag: is_letter_list(tag))
+        for letter_list in letter_lists:
+            itens = letter_list.find_all(name="li")
+            for item in itens:
+                break_line = html.new_tag("br")
+                item.p.insert_after(break_line)
+            #print("")
+        #
+
         
+        # Font em todas as tags
+        for tag in html.find_all(): tag['style'] = "font-family: SwissReSans;"
+
+        spam_geral = html.new_tag("span")
+        #spam_geral['style'] = "font-family: SwissReSans !important;"
+        spam_geral.insert(0, html)
+
+        print(colors.yellow("Salvando arquivo..."))
         modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
         #modalidade = open(f"{modalidades_path}/alt_{modalidade_file_name}", "w")
-        modalidade.write(str(html))
+        modalidade.write(str(spam_geral))
         modalidade.close()
+        print(colors.green("Arquivo salvo."))
     #
+    print(colors.green("Fim da etapa de Correção."))
 #
 
 def sqler():
