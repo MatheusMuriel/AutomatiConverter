@@ -80,7 +80,8 @@ def corretor():
         modalidade.close()
         
         print(colors.blue(f"{index} - {modalidade_file_name}"))
-        parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml')
+        parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml') # TODO ver com o 'html.parser'
+        # TODO ver pq ta colocando HTML
         title = parsed_modalidade.strong
         if title.find_parent().name == "h1":
             print("Titulo bugado")
