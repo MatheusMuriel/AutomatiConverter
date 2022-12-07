@@ -1,5 +1,5 @@
 def is_modalidade_title(tag): 
-    is_strong = (tag.name == "strong")
+    is_strong = (tag.name == "strong" or tag.name == "h3")
     is_mod_captalize_case = ('Modalidade' in tag.text)
     is_mod_upper_case = ('MODALIDADE' in tag.text)
 

@@ -6,6 +6,7 @@ from Utils.lambdas import is_modalidade_title
 from Utils.lambdas import is_letter_list
 import os
 import re
+import sys
 
 # Referencias e Documentações
 # https://pandoc.org/try/
@@ -13,12 +14,15 @@ import re
 # https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 ## Parametrização
-input_file               = "DOCX/75_29-11.docx"
-output_path              = "HTML"
-output_full_html_file    = f"{output_path}/output_full.html"
-output_parcial_html_file = f"{output_path}/output_parcial.html"
-modalidades_path         = f"{output_path}/Modalidades"
-modalidade_prefix        = "Modalidade_id_"
+input_file                = "DOCX/75_29-11.docx"
+output_path               = "HTML"
+output_full_html_file     = f"{output_path}/output_full.html"
+output_full_SQL_file      = f"SQL/output.sql"
+modalidades_path          = f"{output_path}/Modalidades"
+modalidade_prefix         = "Modalidade_id_"
+ramo                      = "75"
+category_code_start       = 92
+modality_order_code_start = 14
 ## End Parametrização
 
 def converter():
@@ -36,9 +40,7 @@ def spliter():
     print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando a etapa de Split...")
     
-    # TODO temporariamente como parcial
-    with open(output_parcial_html_file, "r", encoding='utf-8') as html_file:
-    #with open(output_full_html_file, "r", encoding='utf-8') as html_file:
+    with open(output_full_html_file, "r", encoding='utf-8') as html_file:
         html_doc = html_file.read()
         html_file.close()
     #
@@ -60,10 +62,22 @@ def spliter():
     print(colors.yellow("Salvando arquivos..."))
     for index,page in enumerate(pages):
         parsed_page = BeautifulSoup(page, 'html.parser')
-        file_name = f"{slugify(parsed_page.strong.text)}.html"
+        
+        roman_number_regex = "\sM{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\s"
+        search_result = re.search(roman_number_regex, parsed_page.strong.text.upper())
+        modalite_number = ''
+        if search_result is not None:
+            roman_number = search_result.group().replace(" ","")
+            modalite_number = romanToDecimal(roman_number)        
+            file_name = f"{modalite_number:02d}_{slugify(parsed_page.strong.text)}.html"
+            with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
+                html_file.write(page)
+        else:
+            print(colors.red(f"Numero romano não encontrado no arquivo: {parsed_page.strong.text}"))
+            #file_name = f"{slugify(parsed_page.strong.text)}.html"
         #file_name = f"{index}_{slugify(parsed_page.strong.text)}.html"
-        with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
-            html_file.write(page)
+        #with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
+            #html_file.write(page)
         #
     #
     print(colors.green("Arquivos salvos."))
@@ -88,13 +102,14 @@ def corretor():
         if title.name != "h3": 
             old_name = title.name
             title.name = "h3"
-            #print(f"O titulo '{title.string}' foi alterado de {old_name} para h3")
+            print(f"O titulo '{title.string}' foi alterado de {old_name} para h3")
         #
         """ ... """
 
         """ Corretor do estilo dos titulos dos topicos """
-        topics = html.find_all('h1', {'id': re.compile(r'.+')})
-        #print(f"Foram encontrados {colors.bold(len(topics))} topicos")
+        #topics = html.find_all('h1', {'id': re.compile(r'.+')})
+        topics = html.find_all({'id': re.compile(r'.+')})
+        print(f"Foram encontrados {colors.bold(len(topics))} topicos")
         for topic in topics:
             if topic.findChildren():
                 # Tratativa para evitar o strong dentro de strong
@@ -103,7 +118,7 @@ def corretor():
                     child.extract()
                 topic.string = text
             if topic.name != "strong":  
-                #print(f"O topico '{topic.string}' foi alterado de {topic.name} para strong")
+                print(f"O topico '{topic.string}' foi alterado de {topic.name} para strong")
                 topic.name = "strong"
             #
         #
@@ -111,7 +126,7 @@ def corretor():
 
         """ Corretor do espaçamento inicial nas listas alfabeticas """
         letter_list_itens =  html.find_all(name="blockquote")
-        #print(f"Foram encontrados {colors.bold(len(letter_list_itens))} blockquote")
+        print(f"Foram encontrados {colors.bold(len(letter_list_itens))} blockquote")
         contador_blockquote = 0
         for blockquote in letter_list_itens:
             if blockquote.findChild():
@@ -128,12 +143,12 @@ def corretor():
         print(f"Foram removidos {colors.bold(contador_blockquote)} blockquotes.")
 
         """ Corretor da identação das listas alfabeticas  """
-        #letter_lists = html.find_all(lambda tag: is_letter_list(tag))
-        #for letter_list in letter_lists:
-            #last_list = letter_list.find_previous(name="li")
-            #if last_list:
-                #last_list.insert_after(letter_list)
-            #
+        letter_lists = html.find_all(lambda tag: is_letter_list(tag))
+        for letter_list in letter_lists:
+            last_list = letter_list.find_previous(name="li")
+            if last_list:
+                last_list.insert_after(letter_list)
+            
             #print("")
         #
 
@@ -147,18 +162,29 @@ def corretor():
             #print("")
         #
 
+        # TODO - Ver o negocio do 3.1, 3.2
+        # TODO - Ver as sublistas 
+
         
+        """ Corretor da fonte, estilo, caracteres e span """
         # Font em todas as tags
         for tag in html.find_all(): tag['style'] = "font-family: SwissReSans;"
+        #style_tag = html.new_tag("style")
+        #style_tag.append("ol > li::marker { content: counters(list-item,\". \") \". \"; }")
+        #html.insert(0, style_tag)
 
-        spam_geral = html.new_tag("span")
+        #spam_geral = html.new_tag("span")
         #spam_geral['style'] = "font-family: SwissReSans !important;"
-        spam_geral.insert(0, html)
+        #spam_geral.insert(0, html)
+        spam_geral = html
+        output_html = str(spam_geral)
+        output_html = output_html.replace(u'\u2013','\u002d')
+        """ .... """
 
         print(colors.yellow("Salvando arquivo..."))
         modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
         #modalidade = open(f"{modalidades_path}/alt_{modalidade_file_name}", "w")
-        modalidade.write(str(spam_geral))
+        modalidade.write(output_html)
         modalidade.close()
         print(colors.green("Arquivo salvo."))
     #
@@ -170,35 +196,45 @@ def sqler():
     print("Iniciando o modulo de SQL")
     modalidades_files = os.listdir(modalidades_path)
     print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
-    
-    for index,modalidade_file_name in enumerate(modalidades_files):
+
+    category_code = category_code_start
+    modality_order_code = modality_order_code_start
+
+    declarers = []
+    inserts = []
+    for modalidade_file_name in modalidades_files:
         with open(f"{modalidades_path}/{modalidade_file_name}", "r") as modalidade:
             modalidade_html = modalidade.read()
             modalidade.close()
         #
-        roman_number_regex = "-M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})-"
-        search_result = re.search(roman_number_regex, modalidade_file_name.upper())
-        if search_result is not None:
-            roman_number = search_result.group().replace("-","")
-            modalite_number = romanToDecimal(roman_number)
-            print(modalite_number)
-        else:
-            print(colors.red(f"Numero romano não encontrado no arquivo: {modalidade_file_name}"))
-        #
+        modality_number = modalidade_file_name.split("_")[0]
+        str_declare = f"DECLARE @Modality_{ramo}_{modality_number} VARCHAR(MAX) = '{modalidade_html}';"
+        declarers.append(str_declare)
 
-        #print(colors.blue(f"{index} - {modalidade_file_name}"))
-        #parsed_modalidade = BeautifulSoup(modalidade_html, 'lxml')
-        #title = parsed_modalidade.strong.text
-        #print(title)
+        parsed_html = BeautifulSoup(modalidade_html, 'html.parser')
+
+        modalidade_title = parsed_html.find(lambda tag: is_modalidade_title(tag)).string
+        # @CategoryCodeCounter :: @ModalityOrderCounter
+        str_insert = f"EXEC #ConfigureModalitiesForCircular662 @ProductCode,'{modalidade_title}', '{category_code:03d}', '{modality_order_code:02d}', @InitialDate, @Modality_{ramo}_{modality_number};"
+        category_code += 1
+        modality_order_code += 1
+        inserts.append(str_insert)
     #
+    
+    str_declarer = '\n'.join(declarers)
+    str_set_product = "SET @ProductCode = '77777';"
+    str_insert = '\n'.join(inserts)
+    
+    str_final = f"{str_declarer}\n{str_set_product}\n{str_insert}"
+
+    with open(f"{output_full_SQL_file}", 'w') as sql_file:
+        sql_file.write(str_final)
+    #
+
 #
 
 ## -------------------------------
-
 #converter()
-spliter()
-corretor()
-#sqler()
-
-### Modulo de inspeção?
-### Modulo SQL
+#spliter()
+#corretor()
+sqler()
