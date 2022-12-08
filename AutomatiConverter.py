@@ -1,3 +1,7 @@
+import os
+import re
+import sys
+import webbrowser
 from bs4 import BeautifulSoup
 from slugify import slugify
 from Utils.colors import colors
@@ -7,9 +11,7 @@ from Utils.lambdas import is_letter_list
 from Utils.lambdas import is_numeric_list
 from Utils.lambdas import is_topic_title
 from Utils.lambdas import is_alphabetic_or_roman_list_with_numbered_after
-import os
-import re
-import sys
+
 
 # Referencias e Documentações
 # https://pandoc.org/try/
@@ -219,6 +221,8 @@ def sqler():
     print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando o modulo de SQL")
     modalidades_files = os.listdir(modalidades_path)
+    if '.gitkeep' in modalidades_files: 
+        modalidades_files.remove('.gitkeep')
     print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
 
     category_code = category_code_start
@@ -256,12 +260,25 @@ def sqler():
     #
 #
 
+def validator():
+    print(colors.bold(":::::::::::::::::::::::::"))
+    print("Iniciando o modulo Validator")
+    modalidades_files = os.listdir(modalidades_path)
+    print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
+    pwd = os.getcwd()
+    pwd = pwd.replace("\\", "/")
+    url_file_list = f"file:///{pwd}/{modalidades_path}"
+    _url_file_list = f"{pwd}/{modalidades_path}"
+    print(url_file_list)
+    webbrowser.open(f"file:{_url_file_list}")
+#
 ## -------------------------------
-converter()
-input("Aparte enter para continuar...")
-spliter()
-input("Aparte enter para continuar...")
-corretor()
-sqler()
+#converter()
+#input("Aparte enter para continuar...")
+#spliter()
+#input("Aparte enter para continuar...")
+#corretor()
+validator()
+#sqler()
 
 print(colors.green("Fim da execução do script..."))
