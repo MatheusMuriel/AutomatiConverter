@@ -1,12 +1,12 @@
 reated by https://www.toptal.com/developers/gitignore/api/python,virtualenv
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,virtualenv
 
-DOCX/*.docx
-SQL/*.sql
-HTML/*.html
-References/*
-Tests/*
-Archive/*
+*.docx
+*.sql
+*.html
+References/*.*
+Tests/*.*
+Archive/*.*
 
 
 ### Python ###
