@@ -14,7 +14,8 @@ import sys
 # https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 ## Parametrização
-input_file          = "DOCX/75_29-11.docx"
+#input_file          = "DOCX/75_29-11.docx"
+input_file          = "DOCX/76_05-12.docx"
 
 html_output_folder  = "HTML"
 html_output_file    = f"{html_output_folder}/output_full.html"
@@ -66,20 +67,21 @@ def spliter():
     print(colors.yellow("Salvando arquivos..."))
     for index,page in enumerate(pages):
         parsed_page = BeautifulSoup(page, 'html.parser')
+        title = parsed_page.find(lambda t: is_modalidade_title(t))
         
         roman_number_regex = "\sM{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\s"
-        search_result = re.search(roman_number_regex, parsed_page.strong.text.upper())
+        search_result = re.search(roman_number_regex, title.text.upper())
         modalite_number = ''
         if search_result is not None:
             roman_number = search_result.group().replace(" ","")
             modalite_number = romanToDecimal(roman_number)        
-            file_name = f"{modalite_number:02d}_{slugify(parsed_page.strong.text)}.html"
+            file_name = f"{modalite_number:02d}_{slugify(title.text)}.html"
             with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
                 html_file.write(page)
         else:
-            print(colors.red(f"Numero romano não encontrado no arquivo: {parsed_page.strong.text}"))
-            #file_name = f"{slugify(parsed_page.strong.text)}.html"
-        #file_name = f"{index}_{slugify(parsed_page.strong.text)}.html"
+            print(colors.red(f"Numero romano não encontrado no arquivo: {title.text}"))
+            #file_name = f"{slugify(title.text)}.html"
+        #file_name = f"{index}_{slugify(title.text)}.html"
         #with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
             #html_file.write(page)
         #
@@ -237,7 +239,12 @@ def sqler():
 #
 
 ## -------------------------------
-#converter()
-#spliter()
+converter()
+input("Aparte enter para continuar...")
+spliter()
+#input("Aparte enter para continuar...")
 #corretor()
-sqler()
+#input("Aparte enter para continuar...")
+#sqler()
+
+print(colors.green("Fim da execução do script..."))
