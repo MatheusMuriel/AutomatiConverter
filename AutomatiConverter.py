@@ -4,6 +4,9 @@ from Utils.colors import colors
 from Utils.numeros_romanos import romanToDecimal
 from Utils.lambdas import is_modalidade_title
 from Utils.lambdas import is_letter_list
+from Utils.lambdas import is_numeric_list
+from Utils.lambdas import is_topic_title
+from Utils.lambdas import is_alphabetic_or_roman_list_with_numbered_after
 import os
 import re
 import sys
@@ -16,6 +19,7 @@ import sys
 ## Parametrização
 #input_file          = "DOCX/75_29-11.docx"
 input_file          = "DOCX/76_05-12.docx"
+#input_file          = "DOCX/04-76_05-12.docx"
 
 html_output_folder  = "HTML"
 html_output_file    = f"{html_output_folder}/output_full.html"
@@ -93,6 +97,9 @@ def corretor():
     print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando o etapa de Correção...")
     modalidades_files = os.listdir(modalidades_path)
+    if '.gitkeep' in modalidades_files: 
+        modalidades_files.remove('.gitkeep')
+    
     print(f"Foram encontrados {colors.bold(len(modalidades_files))} arquivos de modalidade")
     for index,modalidade_file_name in enumerate(modalidades_files):
         modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "r+")
@@ -102,7 +109,6 @@ def corretor():
         print(colors.blue(f"{index+1} - {modalidade_file_name}"))
         html = BeautifulSoup(modalidade_html, 'html.parser')
         
-
         """ Corretor do estilo do cabeçalho da modalidade """
         title = html.find(lambda tag: is_modalidade_title(tag))
         if title.name != "h3": 
@@ -113,8 +119,7 @@ def corretor():
         """ ... """
 
         """ Corretor do estilo dos titulos dos topicos """
-        #topics = html.find_all('h1', {'id': re.compile(r'.+')})
-        topics = html.find_all({'id': re.compile(r'.+')})
+        topics = html.find_all(lambda t: is_topic_title(t))
         print(f"Foram encontrados {colors.bold(len(topics))} topicos")
         for topic in topics:
             if topic.findChildren():
@@ -164,24 +169,37 @@ def corretor():
             itens = letter_list.find_all(name="li")
             for item in itens:
                 break_line = html.new_tag("br")
-                item.p.insert_after(break_line)
+                #item.p.insert_after(break_line)
             #print("")
         #
 
         # TODO - Ver o negocio do 3.1, 3.2
         # TODO - Ver as sublistas 
 
+        """ Corretor das listas numeradas após listas alfabeticas """
+        letter_with_num_lists = html.find_all(lambda t: is_alphabetic_or_roman_list_with_numbered_after(t))
+        for letter_list in letter_with_num_lists:
+            numeric_lists = letter_list.findChildren(lambda t: is_numeric_list(t))
+            numeric_lists.reverse()
+            for numeric_list in numeric_lists:
+                numeric_itens = numeric_list.find_all("li")
+                if numeric_itens:
+                    numeric_itens.reverse()
+                    for numeric_item in numeric_itens:
+                        letter_list.insert_after(numeric_item)
+        ####
         
         """ Corretor da fonte, estilo, caracteres e span """
         # Font em todas as tags
         for tag in html.find_all(): tag['style'] = "font-family: SwissReSans;"
-        #style_tag = html.new_tag("style")
+        style_tag = html.new_tag("style")
         #style_tag.append("ol > li::marker { content: counters(list-item,\". \") \". \"; }")
         #html.insert(0, style_tag)
 
         #spam_geral = html.new_tag("span")
         #spam_geral['style'] = "font-family: SwissReSans !important;"
         #spam_geral.insert(0, html)
+
         spam_geral = html
         output_html = str(spam_geral)
         output_html = output_html.replace(u'\u2013','\u002d')
@@ -189,7 +207,6 @@ def corretor():
 
         print(colors.yellow("Salvando arquivo..."))
         modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
-        #modalidade = open(f"{modalidades_path}/alt_{modalidade_file_name}", "w")
         modalidade.write(output_html)
         modalidade.close()
         print(colors.green("Arquivo salvo."))
@@ -198,6 +215,7 @@ def corretor():
 #
 
 def sqler():
+    input("Verifique os arquivos html e se estiver certo aparte enter para continuar com o modulo SQLer...")
     print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando o modulo de SQL")
     modalidades_files = os.listdir(modalidades_path)
@@ -242,9 +260,8 @@ def sqler():
 converter()
 input("Aparte enter para continuar...")
 spliter()
-#input("Aparte enter para continuar...")
-#corretor()
-#input("Aparte enter para continuar...")
-#sqler()
+input("Aparte enter para continuar...")
+corretor()
+sqler()
 
 print(colors.green("Fim da execução do script..."))

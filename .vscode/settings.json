@@ -12,6 +12,7 @@
         "References": "Template",
     },
     "files.exclude": {
-        "*/.gitkeep": true
+        "*/.gitkeep": true,
+        "*/*/.gitkeep": true
     }
 }
