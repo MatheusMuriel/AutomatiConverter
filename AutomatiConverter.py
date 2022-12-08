@@ -14,12 +14,16 @@ import sys
 # https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 ## Parametrização
-input_file                = "DOCX/75_29-11.docx"
-output_path               = "HTML"
-output_full_html_file     = f"{output_path}/output_full.html"
-output_full_SQL_file      = f"SQL/output.sql"
-modalidades_path          = f"{output_path}/Modalidades"
-modalidade_prefix         = "Modalidade_id_"
+input_file          = "DOCX/75_29-11.docx"
+
+html_output_folder  = "HTML"
+html_output_file    = f"{html_output_folder}/output_full.html"
+modalidades_path    = f"{html_output_folder}/Modalidades"
+
+sql_output_folder   = "SQL"
+sql_output_file     = f"{sql_output_folder}/output.sql"
+
+
 ramo                      = "75"
 category_code_start       = 92
 modality_order_code_start = 14
@@ -30,23 +34,23 @@ def converter():
     print("Iniciando conversão via pandoc...")
     print(f"Arquivo de entrada: {colors.underline(input_file)}")
     print(colors.yellow("Executando o comando..."))
-    print(colors.bold(f"pandoc --from docx --to html5 --no-highlight -o {output_full_html_file} {input_file}"))
-    os.system(f"pandoc --from docx --to html5 --no-highlight -o {output_full_html_file} {input_file}")
+    print(colors.bold(f"pandoc --from docx --to html5 --no-highlight -o {html_output_file} {input_file}"))
+    os.system(f"pandoc --from docx --to html5 --no-highlight -o {html_output_file} {input_file}")
     print(colors.green("Comando executado com sucesso"))
-    print(f"Gerado o arquivo {colors.underline(output_full_html_file)}")
+    print(f"Gerado o arquivo {colors.underline(html_output_file)}")
 #
 
 def spliter():
     print(colors.bold(":::::::::::::::::::::::::"))
     print("Iniciando a etapa de Split...")
     
-    with open(output_full_html_file, "r", encoding='utf-8') as html_file:
+    with open(html_output_file, "r", encoding='utf-8') as html_file:
         html_doc = html_file.read()
         html_file.close()
     #
 
     parsed_html = BeautifulSoup(html_doc, 'html.parser')
-    print(colors.green(f"Parserizado o arquivo {output_full_html_file}"))
+    print(colors.green(f"Parserizado o arquivo {html_output_file}"))
 
     modalidades = parsed_html.find_all(lambda tag: is_modalidade_title(tag))
 
@@ -227,10 +231,9 @@ def sqler():
     
     str_final = f"{str_declarer}\n{str_set_product}\n{str_insert}"
 
-    with open(f"{output_full_SQL_file}", 'w') as sql_file:
+    with open(f"{sql_output_file}", 'w') as sql_file:
         sql_file.write(str_final)
     #
-
 #
 
 ## -------------------------------
