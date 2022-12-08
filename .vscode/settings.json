@@ -11,4 +11,7 @@
         "DOCX": "Docs",
         "References": "Template",
     },
+    "files.exclude": {
+        "*/.gitkeep": true
+    }
 }
