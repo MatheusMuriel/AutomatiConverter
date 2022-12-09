@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Arquivo Atual",
+            "name": "AutomatiConverter",
             "type": "python",
             "request": "launch",
             "program": "AutomatiConverter.py",

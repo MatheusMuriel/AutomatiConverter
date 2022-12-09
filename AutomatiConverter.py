@@ -1,17 +1,12 @@
 import os
 import re
 import sys
-import webbrowser
 import subprocess
 from bs4 import BeautifulSoup
 from slugify import slugify
 from Utils.colors import *
-from Utils.numeros_romanos import romanToDecimal
-from Utils.lambdas import is_modalidade_title
-from Utils.lambdas import is_letter_list
-from Utils.lambdas import is_numeric_list
-from Utils.lambdas import is_topic_title
-from Utils.lambdas import is_alphabetic_or_roman_list_with_numbered_after
+from Utils.roman import *
+from Utils.lambdas import *
 
 
 # Referencias e Documentações
@@ -278,7 +273,8 @@ def validator():
 #spliter()
 #input("Aparte enter para continuar...")
 #corretor()
-validator()
+#validator()
 #sqler()
+
 
 print(green("Fim da execução do script..."))
