@@ -7,6 +7,7 @@ from slugify import slugify
 from Utils.colors import *
 from Utils.roman import *
 from Utils.lambdas import *
+from Modules.Corretores import *
 
 
 # Referencias e Documentações
@@ -16,8 +17,8 @@ from Utils.lambdas import *
 
 ## Parametrização
 #input_file          = "DOCX/75_29-11.docx"
-input_file          = "DOCX/76_05-12.docx"
-#input_file          = "DOCX/04-76_05-12.docx"
+#input_file          = "DOCX/76_05-12.docx"
+input_file          = "DOCX/04-76_05-12.docx"
 
 html_output_folder  = "HTML"
 html_output_file    = f"{html_output_folder}/output_full.html"
@@ -100,108 +101,30 @@ def corretor():
     
     print(f"Foram encontrados {bold(len(modalidades_files))} arquivos de modalidade")
     for index,modalidade_file_name in enumerate(modalidades_files):
-        modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "r+")
+        modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "r")
         modalidade_html = modalidade.read()
         modalidade.close()
         
         print(blue(f"{index+1} - {modalidade_file_name}"))
         html = BeautifulSoup(modalidade_html, 'html.parser')
         
-        """ Corretor do estilo do cabeçalho da modalidade """
-        title = html.find(lambda tag: is_modalidade_title(tag))
-        if title.name != "h3": 
-            old_name = title.name
-            title.name = "h3"
-            print(f"O titulo '{title.string}' foi alterado de {old_name} para h3")
-        #
-        """ ... """
-
-        """ Corretor do estilo dos titulos dos topicos """
-        topics = html.find_all(lambda t: is_topic_title(t))
-        print(f"Foram encontrados {bold(len(topics))} topicos")
-        for topic in topics:
-            if topic.findChildren():
-                # Tratativa para evitar o strong dentro de strong
-                text = topic.text.replace('\n',' ')
-                for child in topic.findChildren(): 
-                    child.extract()
-                topic.string = text
-            if topic.name != "strong":  
-                print(f"O topico '{topic.string}' foi alterado de {topic.name} para strong")
-                topic.name = "strong"
-            #
-        #
-        print(f"Foram arrumados {bold(len(topics))} topicos.")
-
-        """ Corretor do espaçamento inicial nas listas alfabeticas """
-        letter_list_itens =  html.find_all(name="blockquote")
-        print(f"Foram encontrados {bold(len(letter_list_itens))} blockquote")
-        contador_blockquote = 0
-        for blockquote in letter_list_itens:
-            if blockquote.findChild():
-                sub_tag = blockquote.findChild()
-                super_tag = blockquote.find_parent()
-                if super_tag.name == "li":
-                    blockquote.extract()
-                    super_tag.insert(0, sub_tag)
-                else:
-                    blockquote.name = "p"
-                contador_blockquote += 1
-            #
-        #
-        print(f"Foram removidos {bold(contador_blockquote)} blockquotes.")
-
-        """ Corretor da identação das listas alfabeticas  """
-        letter_lists = html.find_all(lambda tag: is_letter_list(tag))
-        for letter_list in letter_lists:
-            last_list = letter_list.find_previous(name="li")
-            if last_list:
-                last_list.insert_after(letter_list)
-            
-            #print("")
-        #
-
-        """ Corretor de quebra de linhas em listas alfabeticas """
-        letter_lists = html.find_all(lambda tag: is_letter_list(tag))
-        for letter_list in letter_lists:
-            itens = letter_list.find_all(name="li")
-            for item in itens:
-                break_line = html.new_tag("br")
-                #item.p.insert_after(break_line)
-            #print("")
-        #
-
-        # TODO - Ver o negocio do 3.1, 3.2
-        # TODO - Ver as sublistas 
-
-        """ Corretor das listas numeradas após listas alfabeticas """
-        letter_with_num_lists = html.find_all(lambda t: is_alphabetic_or_roman_list_with_numbered_after(t))
-        for letter_list in letter_with_num_lists:
-            numeric_lists = letter_list.findChildren(lambda t: is_numeric_list(t))
-            numeric_lists.reverse()
-            for numeric_list in numeric_lists:
-                numeric_itens = numeric_list.find_all("li")
-                if numeric_itens:
-                    numeric_itens.reverse()
-                    for numeric_item in numeric_itens:
-                        letter_list.insert_after(numeric_item)
-        ####
+        # Correctores de HTML
+        html = corrector_modality_header(html)
+        html = corrector_topic_title(html)
+        html = corrector_spacing_alphabetic_list_itens(html)
+        html = corrector_indentation_alphabetic_lists(html)
+        #html = corrector_line_break_alphabetic_lists(html)
+        html = corrector_numbered_lists_after_alphabetic_list(html)
+        html = corrector_font_swiss_sans(html)
         
-        """ Corretor da fonte, estilo, caracteres e span """
-        # Font em todas as tags
-        for tag in html.find_all(): tag['style'] = "font-family: SwissReSans;"
-        style_tag = html.new_tag("style")
-        #style_tag.append("ol > li::marker { content: counters(list-item,\". \") \". \"; }")
-        #html.insert(0, style_tag)
+        html = corrector_marker_nested_lists(html)
+        #TODO - Problema com listas alfabeticas
 
-        #spam_geral = html.new_tag("span")
-        #spam_geral['style'] = "font-family: SwissReSans !important;"
-        #spam_geral.insert(0, html)
+        # TODO - Ver de por a tag style no tiny mce
 
-        spam_geral = html
-        output_html = str(spam_geral)
-        output_html = output_html.replace(u'\u2013','\u002d')
-        """ .... """
+        # Correctores de String
+        output_html = str(html)
+        output_html = corrector_invalid_characters(output_html)
 
         print(yellow("Salvando arquivo..."))
         modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
@@ -270,9 +193,9 @@ def validator():
 ## -------------------------------
 #converter()
 #input("Aparte enter para continuar...")
-#spliter()
+spliter()
 #input("Aparte enter para continuar...")
-#corretor()
+corretor()
 #validator()
 #sqler()
 
