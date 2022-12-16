@@ -22,7 +22,8 @@ input_file          = "DOCX/04-76_05-12.docx"
 
 html_output_folder  = "HTML"
 html_output_file    = f"{html_output_folder}/output_full.html"
-modalidades_path    = f"{html_output_folder}/Modalidades"
+spliter_path        = f"{html_output_folder}/Modalidades"
+corrector_path      = f"{spliter_path}/Corrigidas"
 
 sql_output_folder   = "SQL"
 sql_output_file     = f"{sql_output_folder}/output.sql"
@@ -79,13 +80,13 @@ def spliter():
             roman_number = search_result.group().replace(" ","")
             modalite_number = romanToDecimal(roman_number)        
             file_name = f"{modalite_number:02d}_{slugify(title.text)}.html"
-            with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
+            with open(f"{spliter_path}/{file_name}", 'w') as html_file:
                 html_file.write(page)
         else:
             print(red(f"Numero romano não encontrado no arquivo: {title.text}"))
             #file_name = f"{slugify(title.text)}.html"
         #file_name = f"{index}_{slugify(title.text)}.html"
-        #with open(f"{modalidades_path}/{file_name}", 'w') as html_file:
+        #with open(f"{spliter_path}/{file_name}", 'w') as html_file:
             #html_file.write(page)
         #
     #
@@ -95,13 +96,14 @@ def spliter():
 def corretor():
     print(bold(":::::::::::::::::::::::::"))
     print("Iniciando o etapa de Correção...")
-    modalidades_files = os.listdir(modalidades_path)
+    modalidades_files = os.listdir(spliter_path)
     if '.gitkeep' in modalidades_files: 
         modalidades_files.remove('.gitkeep')
+        modalidades_files.remove(corrector_path.split('/')[-1])
     
     print(f"Foram encontrados {bold(len(modalidades_files))} arquivos de modalidade")
     for index,modalidade_file_name in enumerate(modalidades_files):
-        modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "r")
+        modalidade = open(f"{spliter_path}/{modalidade_file_name}", "r")
         modalidade_html = modalidade.read()
         modalidade.close()
         
@@ -115,11 +117,11 @@ def corretor():
         html = corrector_indentation_alphabetic_lists(html)
         #html = corrector_line_break_alphabetic_lists(html)
         html = corrector_numbered_lists_after_alphabetic_list(html)
-        html = corrector_font_swiss_sans(html)
+        #html = corrector_font_swiss_sans(html)
         
-        html = corrector_marker_nested_lists(html)
-        #TODO - Problema com listas alfabeticas
-
+        #html = corrector_marker_nested_lists(html)
+        
+        # TODO - Problema com listas alfabeticas
         # TODO - Ver de por a tag style no tiny mce
 
         # Correctores de String
@@ -127,7 +129,7 @@ def corretor():
         output_html = corrector_invalid_characters(output_html)
 
         print(yellow("Salvando arquivo..."))
-        modalidade = open(f"{modalidades_path}/{modalidade_file_name}", "w")
+        modalidade = open(f"{corrector_path}/{modalidade_file_name}", "w")
         modalidade.write(output_html)
         modalidade.close()
         print(green("Arquivo salvo."))
@@ -135,11 +137,23 @@ def corretor():
     print(green("Fim da etapa de Correção."))
 #
 
+def validator():
+    print(bold(":::::::::::::::::::::::::"))
+    print("Iniciando o modulo Validator")
+    modalidades_files = os.listdir(corrector_path)
+    print(f"Foram encontrados {bold(len(modalidades_files))} arquivos de modalidade")
+    pwd = os.getcwd()
+    pwd = pwd.replace("\\", "/")
+    url_file_list = f"file:///{pwd}/{corrector_path}"
+    print(f"Abrindo o navegador na pasta {url_file_list} para vizualizar os arquivos")
+    subprocess.call(f'firefox {url_file_list}', shell=True)
+#
+
 def sqler():
-    input("Verifique os arquivos html e se estiver certo aparte enter para continuar com o modulo SQLer...")
+    #input("Verifique os arquivos html e se estiver certo aparte enter para continuar com o modulo SQLer...")
     print(bold(":::::::::::::::::::::::::"))
     print("Iniciando o modulo de SQL")
-    modalidades_files = os.listdir(modalidades_path)
+    modalidades_files = os.listdir(corrector_path)
     if '.gitkeep' in modalidades_files: 
         modalidades_files.remove('.gitkeep')
     print(f"Foram encontrados {bold(len(modalidades_files))} arquivos de modalidade")
@@ -150,10 +164,11 @@ def sqler():
     declarers = []
     inserts = []
     for modalidade_file_name in modalidades_files:
-        with open(f"{modalidades_path}/{modalidade_file_name}", "r") as modalidade:
+        with open(f"{corrector_path}/{modalidade_file_name}", "r") as modalidade:
             modalidade_html = modalidade.read()
             modalidade.close()
         #
+        modalidade_html = modalidade_html.replace('\n',' ')
         modality_number = modalidade_file_name.split("_")[0]
         str_declare = f"DECLARE @Modality_{ramo}_{modality_number} VARCHAR(MAX) = '{modalidade_html}';"
         declarers.append(str_declare)
@@ -179,21 +194,10 @@ def sqler():
     #
 #
 
-def validator():
-    print(bold(":::::::::::::::::::::::::"))
-    print("Iniciando o modulo Validator")
-    modalidades_files = os.listdir(modalidades_path)
-    print(f"Foram encontrados {bold(len(modalidades_files))} arquivos de modalidade")
-    pwd = os.getcwd()
-    pwd = pwd.replace("\\", "/")
-    url_file_list = f"file:///{pwd}/{modalidades_path}"
-    print(f"Abrindo o navegador na pasta {url_file_list} para vizualizar os arquivos")
-    subprocess.call(f'firefox {url_file_list}', shell=True)
-#
 ## -------------------------------
 #converter()
 #input("Aparte enter para continuar...")
-spliter()
+#spliter()
 #input("Aparte enter para continuar...")
 corretor()
 #validator()
