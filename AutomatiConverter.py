@@ -115,14 +115,11 @@ def corretor():
         html = corrector_topic_title(html)
         html = corrector_spacing_alphabetic_list_itens(html)
         html = corrector_indentation_alphabetic_lists(html)
-        #html = corrector_line_break_alphabetic_lists(html)
+        html = corrector_line_break_alphabetic_lists(html)
         html = corrector_numbered_lists_after_alphabetic_list(html)
-        #html = corrector_font_swiss_sans(html)
-        
-        #html = corrector_marker_nested_lists(html)
-        
-        # TODO - Problema com listas alfabeticas
-        # TODO - Ver de por a tag style no tiny mce
+        html = corrector_font_swiss_sans(html)
+
+        html = corrector_converter_nested_list(html)
 
         # Correctores de String
         output_html = str(html)

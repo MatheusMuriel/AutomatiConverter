@@ -3,6 +3,7 @@ from slugify import slugify
 from Utils.colors import *
 from Utils.roman import *
 from Utils.lambdas import *
+from Utils.numbers import *
 
 def corrector_modality_header(html):
     """ Corretor do estilo do cabeçalho da modalidade """
@@ -123,4 +124,50 @@ def corrector_marker_nested_lists(html):
 def corrector_invalid_characters(html_str):
     html_str.replace(u'\u2013','\u002d')
     return html_str
+#
+
+def corrector_converter_nested_list(html):
+    list_of_ol = html.find_all('ol', recursive=False)
+
+    def converter_function(ol_item, counter=1, prefix='', type_of_list=''):
+        if 'type' in ol_item.attrs: type_of_list = ol_item['type']
+        if 'start' in ol_item.attrs: 
+            if type_of_list == '1':
+                counter = int(ol_item['start'])
+            elif type_of_list.lower() == 'a':
+                counter = int(letter_to_number(ol_item['start']))
+        
+        li_list = ol_item.findChildren('li', recursive=False)
+        for li_item in li_list:
+            primeiro_texto = li_item.find(lambda t: t.name=='p' or t.name=='strong')
+            if type_of_list == '1':
+                primeiro_texto.string = f"{prefix}{counter}. {primeiro_texto.text}"
+            elif type_of_list == 'a':
+                letter = number_to_letter(counter)
+                primeiro_texto.string = f"{letter}. {primeiro_texto.text}"
+            elif type_of_list == 'i':
+                letter = toRoman(counter)
+                primeiro_texto.string = f"{letter.lower()}. {primeiro_texto.text}"
+            #
+
+            filhos = li_item.findChildren('ol', recursive=False)
+            for f in filhos: 
+                #print(f)
+                converter_function(f, prefix=f"{counter}.")
+
+            #if (type_of_list == '1'): counter += 1
+            counter += 1
+        # 
+        ol_children_list = ol_item.findChildren('ol', recursive=False)
+        for ol_children_item in ol_children_list:
+            converter_function(ol_children_item)
+        #
+    #
+    for item in list_of_ol: converter_function(item)
+
+    all_lists = html.find_all('ol')
+    for l in all_lists: 
+        if 'type' in l.attrs: l['type'] = 'none'
+    #
+    return html
 #
