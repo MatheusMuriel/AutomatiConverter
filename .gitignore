@@ -5,9 +5,11 @@ reated by https://www.toptal.com/developers/gitignore/api/python,virtualenv
 *.tmp
 *.sql
 *.html
+*.csv
 References/*.*
 Tests/*.*
 Archive/*.*
+HTML/*
 
 
 ### Python ###

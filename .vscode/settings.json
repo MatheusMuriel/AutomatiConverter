@@ -10,6 +10,7 @@
         ".myenv": "Environment",
         "DOCX": "Docs",
         "References": "Template",
+        "CSV": "Mappings"
     },
     "files.exclude": {
         "*/.gitkeep": true,
