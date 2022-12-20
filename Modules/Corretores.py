@@ -152,10 +152,8 @@ def corrector_converter_nested_list(html):
 
             filhos = li_item.findChildren('ol', recursive=False)
             for f in filhos: 
-                #print(f)
-                converter_function(f, prefix=f"{counter}.")
+                converter_function(f, prefix=f"{prefix}{counter}.")
 
-            #if (type_of_list == '1'): counter += 1
             counter += 1
         # 
         ol_children_list = ol_item.findChildren('ol', recursive=False)
